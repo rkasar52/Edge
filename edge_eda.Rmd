@@ -1,0 +1,42 @@
+---
+title: "Edge Project EDA"
+author: "Edgers"
+date: "10/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+```
+
+
+```{r}
+bluebike <- read.csv("202109-bluebikes-tripdata.csv")
+bluebike$start.station.id <- as.factor(bluebike$start.station.id)
+```
+
+```{r}
+stations_sep2021 <- bluebike %>% 
+  group_by(start.station.id) %>% 
+  summarise(rides_started_here = n()) %>% 
+  arrange(desc(rides_started_here))
+
+stations_sep2021$rank <- 1:nrow(topstations_sep2021)
+```
+
+```{r}
+top20_stations <- stations_sep2021 %>% 
+  filter(rank <= 20) %>% 
+  arrange(rides_started_here) %>% 
+  ggplot(aes(start.station.id, rides_started_here)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90))
+top20_stations
+```
+
+
+
+
