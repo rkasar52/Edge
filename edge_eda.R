@@ -17,18 +17,17 @@ bluebike$stoptime_edt <- with_tz(bluebike$stoptime, tzone = "America/New_York")
 
 
 stations_sep2021 <- bluebike %>% 
-  group_by(start.station.id) %>% 
+  group_by(start.station.name) %>% 
   summarise(rides_started_here = n()) %>% 
   arrange(desc(rides_started_here))
 
 stations_sep2021$rank <- 1:nrow(stations_sep2021)
 
-
 top20_stations <- stations_sep2021 %>% 
   filter(rank <= 20) %>% 
-  arrange(rides_started_here) %>% 
-  ggplot(aes(start.station.id, rides_started_here)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 90))
-top20_stations
+  arrange(rides_started_here)
+
+ggplot(top20_stations) + geom_col(aes(x=rides_started_here, y=reorder(start.station.name, rides_started_here))) + xlab("Total Rides") + ylab("Start Station") + ggtitle("Top Stations by Rides Started")
 
 
 data <- bluebike %>% 
@@ -44,7 +43,13 @@ station_hour_rides_started <- data %>%
 station_hour_rides_started_top10 <- station_hour_rides_started %>% 
   filter(rank <= 10)
 
-ggplot(station_hour_rides_started_top10) + geom_line(aes(x=hour_started, y=rides_started, color=start.station.name))
+ggplot(station_hour_rides_started_top10) + geom_line(aes(x=hour_started, y=rides_started, color=start.station.name)) + xlab("Hour Started") + ylab("Total Rides") + ggtitle("Rides Started by Hour for Top Stations")
 
+top10stations <- stations_sep2021 %>% 
+  filter(rank <= 10) %>% 
+  left_join()
 
-
+  
+  
+  
+ggplot(top10stations)
