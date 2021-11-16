@@ -65,7 +65,7 @@ capacityDay_start <- function(data, station, day){
   station.capacity <- stations$Total.docks[which(stations$Name == station)]
   
   stationDay <- data %>% 
-    filter(tripduration <= 86400 & (start.station.name == station | end.station.name == station) & (substr(starttime_edt, 1, 10) == day | substr(stoptime_edt, 1, 10) == day))
+    filter(tripduration <= 86400 & (start.station.name == station | end.station.name == station) & (substr(starttime_edt, 1, 10) %in% day | substr(stoptime_edt, 1, 10) %in% day))
   
   start <- stationDay %>% 
     filter(start.station.name == station) %>% 
@@ -94,8 +94,8 @@ capacityDay_start <- function(data, station, day){
   return(together)
 }
 
-
-AmesJan03_trans <- capacityDay_start(data, "1200 Beacon St", "2021-09-04") 
+days <- c("2021-09-03", "2021-09-04")
+AmesJan03_trans <- capacityDay_start(data, "1200 Beacon St", days) 
 
 ggplot(AmesJan03_trans) + geom_line(aes(x=time, y=available))
 
