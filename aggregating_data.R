@@ -85,15 +85,14 @@ substop.DOW <- getSubsStop %>%
             avg_Cust_stop = mean(cust_rides))
 
 station.subCount.DOW <- substart.DOW %>% 
-  left_join(substop.DOW, by=c("start.station.name" = "end.station.name")) %>% 
-  select(-DOW.y) %>% 
-  mutate(day_of_week = ifelse(DOW.x == 1, "Sunday", ifelse(
-                DOW.x == 2, "Monday", ifelse(
-                DOW.x == 3, "Tuesday", ifelse(
-                DOW.x == 4, "Wednesday", ifelse(
-                DOW.x == 5, "Thursday", ifelse(
-                DOW.x == 6, "Friday", "Saturday"))))))) %>% 
-  select(-DOW.x)
+  left_join(substop.DOW, by=c("start.station.name" = "end.station.name", "DOW")) %>% 
+  mutate(day_of_week = ifelse(DOW == 1, "Sunday", ifelse(
+                DOW == 2, "Monday", ifelse(
+                DOW == 3, "Tuesday", ifelse(
+                DOW == 4, "Wednesday", ifelse(
+                DOW == 5, "Thursday", ifelse(
+                DOW == 6, "Friday", "Saturday"))))))) %>% 
+  select(-DOW)
 
 
 ## aggregated data - just need to add weather
@@ -104,3 +103,5 @@ aggdata.day <- stations.day %>%
 aggdata.DOW <- stations.DOW %>% 
   left_join(station.subCount.DOW, by = c("station" = "start.station.name", "day_of_week"))
 
+write.csv(aggdata.day, file = "aggdata_day.csv", row.names=FALSE)
+write.csv(aggdata.DOW, file = "aggdata_day_DOW.csv", row.names=FALSE)
