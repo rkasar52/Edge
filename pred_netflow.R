@@ -88,11 +88,10 @@ station.subCount.DOW <- substart.DOW %>%
             DOW == 6, "Friday", "Saturday"))))))) %>% 
   select(-DOW) %>% 
   filter( start.station.name != "18 Dorrance Warehouse") %>% 
-  filter(start.station.name != "Graham and Parks School – Linnaean St at Walker St") %>% 
-  filter(start.station.name != "Union St at Herrick Rd – Newton Centre Green Line") #%>% 
+  filter(start.station.name != "Graham and Parks School ??? Linnaean St at Walker St") %>% 
+  filter(start.station.name != "Union St at Herrick Rd ??? Newton Centre Green Line") #%>% 
   #rename(station = start.station.name)
-
-unique(station.subCount.DOW$start.station.name)
+  print("Weird encoding for graham and union st staions")
 
 
 
@@ -110,7 +109,7 @@ current_bluebikes_stations <- current_bluebikes_stations %>%
 
 station_byday_sub <- station_byday_sub %>% 
   left_join(current_bluebikes_stations, by = c("station" = "Name")) %>% 
-  #mutate(exceed_cap = ifelse(net_flow <= (-1)*`Total docks`, 1, 0)) %>% 
+  mutate(exceed_cap = ifelse(net_flow <= (-1)*`Total docks`, 1, 0)) %>% 
   left_join(sept_weather_boston, by = c("day", "month"))
 
 station_byday_sub$day_of_week <-  factor(station_byday_sub$day_of_week)
@@ -128,7 +127,7 @@ train_ind <- sample(seq_len(nrow(model_df)), size = smp_size)
 train <- model_df[train_ind, ]
 test <- model_df[-train_ind, ]
 
-
+qq <- train[2139,]
 
 model_fit <- gbm(net_flow~ .,
                       data = train,
@@ -159,7 +158,8 @@ MAE(xgboost_test, test$net_flow)
 
 
 
-
+qq <- station_byday_sub %>% 
+  filter(station == "MIT Hayward St at Amherst St")
 
 
 
