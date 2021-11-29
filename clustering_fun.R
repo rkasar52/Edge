@@ -2,18 +2,24 @@ library(caret)
 library(tidyverse)
 library(readxl)
 
-aggdata.day <- read_csv("aggdata_day.csv")
+#aggdata.day <- read_csv("aggdata_day.csv")
+aggdata.day <- read_csv("cluster_data.csv")
+paste0("The ", which(!complete.cases(aggdata.day)), "th station has some weird data, removing")
+aggdata.day <- aggdata.day[-50,]
+
 head(aggdata.day)
 
 Stations <- aggdata.day$station
 Stations
 
+# Difference between subscribers and customers 
 aggdata.day <-  aggdata.day %>% 
   select(-c(station)) %>% 
   mutate(sub_cust_in = avg_Sub_start-avg_Cust_start ,
          sub_cust_out = avg_Sub_stop-avg_Cust_stop  ) %>% 
   select(avgwait, avgBikeIn, avgBikeOut, sub_cust_in, sub_cust_out)
 
+#Scale the Data
 pp <- preProcess(aggdata.day, method =  c("center", "scale"))
 aggdata.scaled <- predict(pp, aggdata.day)
 
@@ -64,8 +70,9 @@ dat %>%
   ylim(0, 2500) +
   theme(axis.title=element_text(size=18), 
         axis.text=element_text(size=18)) +
-  scale_color_brewer(palette="Set1")
-
+  scale_color_brewer(palette="Set1") +
+  geom_vline(xintercept = 6)
+print("6 clusters looks good according to elbow point in  skree plot")
 
 ######################################################################
 ##### KMEANS Cluster ####
@@ -104,7 +111,7 @@ aggdata.DOW <- read_csv("aggdata_day_DOW.csv")
 
 Station <- aggdata.DOW$station
 aggdata.DOW[is.na(aggdata.DOW)] <- 0
-aggdata.DOW <- aggdata.DOW %>% 
+aggdata.DOW_processed <- aggdata.DOW %>% 
   mutate(day_of_week = ifelse(day_of_week == "Monday",1, ifelse(
                               day_of_week == "Tuesday", 2, ifelse(
                               day_of_week == "Wednesday", 3, ifelse(
@@ -116,8 +123,8 @@ aggdata.DOW <- aggdata.DOW %>%
          sub_cust_out = avg_Sub_stop-avg_Cust_stop  ) %>% 
   select(avgwait, day_of_week, avgBikeIn, avgBikeOut, sub_cust_in, sub_cust_out)
 
-pp <- preProcess(aggdata.DOW, method =  c("center", "scale"))
-aggdata.DOW.scaled <- predict(pp, aggdata.DOW)
+pp <- preProcess(aggdata.DOW_processed, method =  c("center", "scale"))
+aggdata.DOW.scaled <- predict(pp, aggdata.DOW_processed)
 
 colMeans(aggdata.DOW.scaled)
 apply(aggdata.DOW.scaled, 2, sd)
@@ -177,52 +184,15 @@ dow_centers <- km_DOW$centers
 km_DOW$size
 
 
-aggdata_day_DOW$Cluster = km_DOW$cluster
+aggdata.DOW$Cluster = km_DOW$cluster
 
 ########################################################################################
 #### Get Day of Week ####
 current_stations <- read_excel("current_stations.xlsx")
-Monday <- aggdata_day_DOW %>% 
-  filter(day_of_week == "Monday") %>% 
-  select(station, Cluster) %>% 
+DOW_Cluster <- aggdata.DOW %>% 
+  select(station, Cluster, day_of_week) %>% 
   left_join(current_stations, by = c("station" = "Name"))
-write_csv(Monday, "DOW_Cluster/Monday.csv")
-
-Tuesday <- aggdata_day_DOW %>% 
-  filter(day_of_week == "Tuesday") %>% 
-  select(station, Cluster) %>% 
-  left_join(current_stations, by = c("station" = "Name"))
-write_csv(Tuesday, "DOW_Cluster/Tuesday")
-
-Wednesday <- aggdata_day_DOW %>% 
-  filter(day_of_week == "Wednesday") %>% 
-  select(station, Cluster) %>% 
-  left_join(current_stations, by = c("station" = "Name"))
-write_csv(Wednesday, "DOW_Cluster/Wednesday")
-
-Thursday <- aggdata_day_DOW %>% 
-  filter(day_of_week == "Thursday") %>% 
-  select(station, Cluster) %>% 
-  left_join(current_stations, by = c("station" = "Name"))
-write_csv(Thursday, "DOW_Cluster/Thursday")
-
-Friday <- aggdata_day_DOW %>% 
-  filter(day_of_week == "Friday") %>% 
-  select(station, Cluster) %>% 
-  left_join(current_stations, by = c("station" = "Name"))
-write_csv(Friday, "DOW_Cluster/Friday")
-
-Saturday <- aggdata_day_DOW %>% 
-  filter(day_of_week == "Saturday") %>% 
-  select(station, Cluster) %>% 
-  left_join(current_stations, by = c("station" = "Name"))
-write_csv(Saturday, "DOW_Cluster/Saturday")
-
-Sunday <- aggdata_day_DOW %>% 
-  filter(day_of_week == "Sunday") %>% 
-  select(station, Cluster) %>% 
-  left_join(current_stations, by = c("station" = "Name"))
-write_csv(Sunday, "DOW_Cluster/Sunday")
+write_csv(DOW_Cluster, "DOW_Cluster/DOW_Cluster.csv")
 
 
 #7 different maps by day of week. 
@@ -235,11 +205,12 @@ write_csv(Sunday, "DOW_Cluster/Sunday")
 ## Adding weather data and clusters to the full data. ##
 
 
-all_data <- read_csv("all_data.csv")
+all_data_train <- read_csv("all_data_train.csv")
+all_data_test <- read_csv("all_data_test.csv")
 sept_weather_boston <- read_excel("sept_weather_boston.xlsx")
 
 #Join weather data. 
-all_data_cluster <- all_data %>% 
+all_data_train_cluster <- all_data_train %>% 
   left_join(sept_weather_boston, by = c("day", "month")) %>% 
   mutate(cluster1 = ifelse(station %in% cluster1, 1, 0), 
          cluster2 = ifelse(station %in% cluster2, 1, 0),
@@ -248,7 +219,20 @@ all_data_cluster <- all_data %>%
          cluster5 = ifelse(station %in% cluster5, 1, 0),
          cluster6 = ifelse(station %in% cluster6, 1, 0))
 
-write_csv(all_data_cluster, "all_data_cluster.csv")
+
+#Join weather data. 
+all_data_test_cluster <- all_data_test %>% 
+  left_join(sept_weather_boston, by = c("day", "month")) %>% 
+  mutate(cluster1 = ifelse(station %in% cluster1, 1, 0), 
+         cluster2 = ifelse(station %in% cluster2, 1, 0),
+         cluster3 = ifelse(station %in% cluster3, 1, 0),
+         cluster4 = ifelse(station %in% cluster4, 1, 0),
+         cluster5 = ifelse(station %in% cluster5, 1, 0),
+         cluster6 = ifelse(station %in% cluster6, 1, 0))
+
+
+write_csv(all_data_train_cluster, "all_data_train_cluster.csv")
+write_csv(all_data_test_cluster, "all_data_test_cluster.csv")
 
 
 
